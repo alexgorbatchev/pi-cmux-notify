@@ -60,7 +60,7 @@ Current notification types:
     - `Updated 3 files in 1m 12s`
 
 - `Error`
-  - sent when a tool fails during the run
+  - sent when the run itself ends in an error or is aborted
   - typical bodies:
     - `read failed for config.json`
     - `edit failed for README.md`
@@ -71,7 +71,7 @@ Notification bodies are summarized from the run itself:
 - reviewed files from `read`
 - searches from `grep` and `find`
 - shell activity from `bash`
-- first tool failure, if any
+- the final agent error, with the first tool failure used as a fallback summary when needed
 
 ### cmux split commands
 

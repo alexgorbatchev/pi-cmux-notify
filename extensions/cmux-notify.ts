@@ -19,7 +19,14 @@ interface RunState {
 	changedFiles: Set<string>;
 	searchCount: number;
 	bashCount: number;
-	firstError: string | undefined;
+	firstToolError: string | undefined;
+}
+
+interface AssistantMessageLike {
+	role: "assistant";
+	stopReason?: string;
+	errorMessage?: string;
+	content?: Array<{ type?: string; text?: string }>;
 }
 
 function getNumberFromEnv(name: string, fallback: number): number {
@@ -109,8 +116,51 @@ function summarizeSuccess(state: RunState, durationMs: number, thresholdMs: numb
 		: "Finished and waiting for input";
 }
 
-function buildSubtitle(state: RunState, durationMs: number, thresholdMs: number): string {
-	if (state.firstError) return "Error";
+function isAssistantMessage(message: unknown): message is AssistantMessageLike {
+	return typeof message === "object" && message !== null && (message as { role?: unknown }).role === "assistant";
+}
+
+function getLastAssistantMessage(messages: readonly unknown[]): AssistantMessageLike | undefined {
+	for (let index = messages.length - 1; index >= 0; index -= 1) {
+		const message = messages[index];
+		if (isAssistantMessage(message)) return message;
+	}
+	return undefined;
+}
+
+function summarizeAssistantText(message: AssistantMessageLike): string | undefined {
+	if (!Array.isArray(message.content)) return undefined;
+
+	const text = message.content
+		.filter(
+			(part): part is { type: "text"; text: string } =>
+				typeof part === "object" &&
+				part !== null &&
+				part.type === "text" &&
+				typeof part.text === "string" &&
+				part.text.trim().length > 0,
+		)
+		.map((part) => part.text.trim())
+		.join("\n")
+		.trim();
+
+	if (text.length === 0) return undefined;
+	return text.length > 120 ? `${text.slice(0, 117)}...` : text;
+}
+
+function summarizeRunError(messages: readonly unknown[], fallbackError?: string): string | undefined {
+	const assistantMessage = getLastAssistantMessage(messages);
+	if (!assistantMessage) return fallbackError;
+	if (assistantMessage.stopReason !== "error" && assistantMessage.stopReason !== "aborted") {
+		return undefined;
+	}
+
+	const summary = assistantMessage.errorMessage?.trim() || summarizeAssistantText(assistantMessage) || fallbackError || "Agent run failed";
+	return summary.length > 120 ? `${summary.slice(0, 117)}...` : summary;
+}
+
+function buildSubtitle(hasRunError: boolean, state: RunState, durationMs: number, thresholdMs: number): string {
+	if (hasRunError) return "Error";
 	if (state.changedFiles.size > 0 || durationMs >= thresholdMs) return "Task Complete";
 	return "Waiting";
 }
@@ -122,7 +172,7 @@ function createEmptyRunState(): RunState {
 		changedFiles: new Set<string>(),
 		searchCount: 0,
 		bashCount: 0,
-		firstError: undefined,
+		firstToolError: undefined,
 	};
 }
 
@@ -170,8 +220,8 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI) {
 	});
 
 	pi.on("tool_result", async (event) => {
-		if (event.isError && !runState.firstError) {
-			runState.firstError = summarizeError(event);
+		if (event.isError && !runState.firstToolError) {
+			runState.firstToolError = summarizeError(event);
 		}
 
 		if (isReadToolResult(event)) {
@@ -196,10 +246,11 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI) {
 		}
 	});
 
-	pi.on("agent_end", async () => {
+	pi.on("agent_end", async (event) => {
 		const durationMs = Date.now() - runState.startedAt;
-		const subtitle = buildSubtitle(runState, durationMs, thresholdMs);
-		const body = runState.firstError || summarizeSuccess(runState, durationMs, thresholdMs);
+		const runError = summarizeRunError(event.messages, runState.firstToolError);
+		const subtitle = buildSubtitle(Boolean(runError), runState, durationMs, thresholdMs);
+		const body = runError || summarizeSuccess(runState, durationMs, thresholdMs);
 		await sendNotification(subtitle, body);
 	});
 

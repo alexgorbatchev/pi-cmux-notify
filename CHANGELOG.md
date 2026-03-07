@@ -12,6 +12,10 @@
 
 - Documented the current cmux notification types and removed the debug/test step from the README.
 
+### Fixed
+
+- Adjusted `cmux-notify` so the notification only shows `Error` when the run itself ends in an error or abort, instead of surfacing handled intermediate tool failures as final errors.
+
 ### Removed
 
 - Removed the `cmux-notify-test` command from `cmux-notify`.
