@@ -233,10 +233,3 @@ The split review commands start a fresh pi session with a focused bootstrap prom
 - `PI_CMUX_NOTIFY_TITLE` - notification title override (default: `Pi`)
 
 cmux uses the current `CMUX_WORKSPACE_ID` / `CMUX_SURFACE_ID` automatically, or you can provide those in your environment yourself.
-
-## Publish
-
-```bash
-cd ~/pi-cmux
-NODE_AUTH_TOKEN=YOUR_TOKEN npm publish
-```
