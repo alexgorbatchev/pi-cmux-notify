@@ -18,7 +18,8 @@
 ### Fixed
 
 - Adjusted `cmux-notify` so the notification only shows `Error` when the run itself ends in an error or abort, instead of surfacing handled intermediate tool failures as final errors.
-- Updated `npx pi-cmux` installs to copy bundled `skills/` and `prompts/` in addition to `extensions/`, so installer-based installs include the review workflows documented in the package.
+- Updated `npx pi-cmux` installs to install `pi-cmux` as a local Pi package under `~/.pi/agent/packages/` and register it in `settings.json`, so bundled `extensions/`, `skills/`, and `prompts/` all load correctly.
+- Added an `extensions/index.ts` bundle entry and pointed the package manifest at it so package installs use a single extension entrypoint instead of trying to import the `extensions/` directory directly.
 
 ### Removed
 
