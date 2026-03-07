@@ -326,17 +326,31 @@ function registerZoxideCommand(
 export default function cmuxZoxideExtension(pi: ExtensionAPI) {
 	registerZoxideCommand(
 		pi,
-		"z",
+		"cmz",
 		"right",
 		"Open a new right split for a zoxide directory match and start pi there",
+		"Opened a new zoxide split to the right",
+	);
+	registerZoxideCommand(
+		pi,
+		"z",
+		"right",
+		"Alias for /cmz",
 		"Opened a new zoxide split to the right",
 	);
 
 	registerZoxideCommand(
 		pi,
-		"zh",
+		"cmzh",
 		"down",
 		"Open a new lower split for a zoxide directory match and start pi there",
+		"Opened a new zoxide split below",
+	);
+	registerZoxideCommand(
+		pi,
+		"zh",
+		"down",
+		"Alias for /cmzh",
 		"Opened a new zoxide split below",
 	);
 }
