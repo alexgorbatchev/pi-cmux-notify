@@ -6,7 +6,10 @@ Pi package with cmux-powered terminal integrations.
 
 Pi works well in the terminal, but terminal-native actions like workspace notifications, editor launching, and pane orchestration are better handled by cmux. This package collects pi extensions that use the cmux API instead of baking those workflows into pi itself.
 
-The first extension is `cmux-notify`, which sends workspace notifications when pi finishes, waits for input, or hits an error.
+It currently includes:
+- `cmux-notify` for workspace notifications when pi finishes, waits for input, or ends in an error state
+- `cmux-split` for opening new cmux split panels and starting fresh pi sessions in the same project
+- `cmux-zoxide` for opening a new split from a zoxide match and starting pi in the target directory
 
 ## Usage
 
