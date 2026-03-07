@@ -1,0 +1,47 @@
+{
+  "name": "pi-cmux",
+  "version": "0.1.0",
+  "description": "Pi package with cmux-powered terminal integrations",
+  "author": "Javi Molina",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "cmux",
+    "terminal",
+    "notifications"
+  ],
+  "homepage": "https://github.com/javiermolinar/pi-cmux#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/javiermolinar/pi-cmux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/javiermolinar/pi-cmux/issues"
+  },
+  "bin": {
+    "pi-cmux": "install.mjs"
+  },
+  "files": [
+    "extensions/",
+    "install.mjs",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  }
+}
