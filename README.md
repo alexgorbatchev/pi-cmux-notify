@@ -1,16 +1,12 @@
 # pi-cmux
 
-Pi package with cmux-powered terminal integrations.
+Pi package with cmux-powered terminal integrations for [Pi](https://pi.dev).
 
 ## Why
 
-Pi works well in the terminal, but terminal-native actions like workspace notifications, editor launching, and pane orchestration are better handled by cmux. This package collects pi extensions that use the cmux API instead of baking those workflows into pi itself.
+[Pi](https://pi.dev) works well in the terminal, but terminal-native actions like workspace notifications, editor launching, and pane orchestration are better handled by cmux. This package collects Pi extensions that use the cmux API instead of baking those workflows into Pi itself.
 
-It currently includes:
-- `cmux-notify` for workspace notifications when pi finishes, waits for input, or ends in an error state
-- `cmux-split` for opening new cmux split panels and starting fresh pi sessions in the same project
-- `cmux-zoxide` for opening a new split from a zoxide match and starting pi in the target directory
-- `cmux-review` for opening focused review sessions in a new split, backed by bundled review prompts and a reusable review skill
+It currently includes cmux-powered notifications, split commands, zoxide jumps, review workflows, and split-based task handoff.
 
 ## Usage
 
@@ -32,12 +28,32 @@ If pi is already running, use:
 /reload
 ```
 
-### Included extensions
+### Feature overview
 
-- `cmux-notify` - sends `cmux notify` alerts for pi completion and error states
-- `cmux-split` - opens new cmux split panels and starts fresh pi sessions in the same project
-- `cmux-zoxide` - opens a new split from a zoxide match and starts pi in the target directory
-- `cmux-review` - opens a new split for a focused review session and starts pi with a bundled review prompt
+| Feature | Commands | What it does |
+|---|---|---|
+| Notifications | automatic via `cmux-notify` | Sends `cmux notify` alerts when Pi waits, completes work, or ends in error/abort. |
+| Plain splits | `/cmv`, `/cmh` | Opens a new cmux split and starts a fresh Pi session in the same project. |
+| Directory jumps | `/cmz <query>`, `/cmzh <query>` | Resolves a zoxide match or direct directory path, then starts Pi in a split there. |
+| Continuation handoff | `/cmcv`, `/cmch` | Opens a new split with a related handoff session in the current checkout. |
+| Continuation worktree | `/cmcv -c <branch> [--from <ref>] [note]`, `/cmch -c <branch> [--from <ref>] [note]` | Creates a new branch worktree from the current `HEAD` or an explicit base ref, then starts Pi in a split there with handoff context. |
+| In-place review prompts | `/review <target>`, `/review-diff [focus-or-pr-url]` | Expands bundled prompts for review in the current pane. |
+| Split review sessions | `/cmrv`, `/cmrh`, plus review flags | Opens a review-focused split session for the current diff, a file, a directory, or a GitHub PR URL. |
+| Review skill | `/skill:code-review` | Loads the bundled structured review skill for files, directories, diffs, and PRs. |
+
+### Bundled extensions and resources
+
+Extensions:
+- `cmux-notify`
+- `cmux-split`
+- `cmux-zoxide`
+- `cmux-review`
+- `cmux-continue`
+
+Other bundled resources:
+- `code-review` skill
+- `/review` prompt template
+- `/review-diff` prompt template
 
 ### cmux-notify notifications
 
@@ -129,6 +145,38 @@ Example:
 ```
 
 If the argument is already a valid directory path, `/cmz` and `/cmzh` use it directly instead of querying zoxide.
+
+### Continuation and worktree helpers
+
+- `/cmcv`
+  - opens a new split to the right
+  - creates a related handoff session in the current checkout
+- `/cmch`
+  - opens a new split below
+  - creates a related handoff session in the current checkout
+- `/cmcv <note>` / `/cmch <note>`
+  - same as above, but adds a focus note to the handoff context
+- `/cmcv -c <branch>` / `/cmch -c <branch>`
+  - creates a new branch worktree from the current `HEAD`, then opens a new split there
+- `/cmcv -c <branch> --from <ref>` / `/cmch -c <branch> --from <ref>`
+  - creates a new branch worktree from an explicit base ref such as `main` or `origin/main`
+- `/cmcv -c <branch> [--from <ref>] <note...>` / `/cmch -c <branch> [--from <ref>] <note...>`
+  - same as above, but also adds a focus note to the worktree handoff
+
+Examples:
+
+```text
+/cmcv
+/cmcv focus on tests
+/cmcv -c fix/notify-bug
+/cmcv -c fix/notify-bug --from main
+/cmcv -c fix/notify-bug --from main do a review of the existing changes
+/cmch -c feature/review-ui focus on edge cases
+```
+
+Same-checkout continuation creates a related handoff session and adds an explicit summary of the current context. When the current Pi session is persisted, the new pane also inherits the current conversation path.
+
+Worktree continuation starts a new session in the target worktree and seeds it with a structured handoff summary from the source pane.
 
 ### Review helpers
 
