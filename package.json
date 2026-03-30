@@ -5,7 +5,10 @@
   "scripts": {
     "test": "PI_OFFLINE=1 pi --no-extensions -e ./extensions/index.ts --list-models > /dev/null"
   },
-  "author": "Alex Gorbatchev",
+  "author": "Alex Gorbatchev <alex.gorbatchev@gmail.com>",
+  "contributors": [
+    "Javi Molina <javimolina@fastmail.com>"
+  ],
   "license": "MIT",
   "type": "module",
   "keywords": [

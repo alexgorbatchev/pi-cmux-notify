@@ -1,6 +1,6 @@
 # @alexgorbatchev/pi-cmux-notify
 
-Pi package with cmux-backed notifications for [Pi](https://pi.dev).
+[pi](https://pi.dev) package for [cmux](https://cmux.com) notifications.
 
 ## Why
 
