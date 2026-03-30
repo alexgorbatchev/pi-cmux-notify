@@ -7,12 +7,18 @@ import {
 	isReadToolResult,
 	isWriteToolResult,
 } from "@mariozechner/pi-coding-agent";
-import { basename } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import os from "node:os";
+import { basename, join } from "node:path";
 
 const DEFAULT_THRESHOLD_MS = 15000;
 const DEFAULT_DEBOUNCE_MS = 3000;
 const NOTIFY_TIMEOUT_MS = 5000;
 const DEFAULT_NOTIFY_LEVEL = "all";
+const DEFAULT_NOTIFY_TITLE = "Pi";
+const PACKAGE_SETTINGS_KEY = "@alexgorbatchev/pi-cmux-notify";
+const PI_CONFIG_DIR = ".pi";
+const SETTINGS_FILE_NAME = "settings.json";
 
 type NotifyLevel = "all" | "medium" | "low" | "disabled";
 
@@ -23,6 +29,13 @@ interface RunState {
 	searchCount: number;
 	bashCount: number;
 	firstToolError: string | undefined;
+}
+
+interface NotifySettings {
+	level: NotifyLevel;
+	thresholdMs: number;
+	debounceMs: number;
+	title: string;
 }
 
 interface AssistantMessageLike {
@@ -36,19 +49,68 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
 
-function getNumberFromEnv(name: string, fallback: number): number {
-	const value = process.env[name];
-	if (!value) return fallback;
-	const parsed = Number.parseInt(value, 10);
-	return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+function readJsonFile(path: string): unknown {
+	if (!existsSync(path)) return undefined;
+	try {
+		return JSON.parse(readFileSync(path, "utf8"));
+	} catch {
+		return undefined;
+	}
 }
 
-function getNotifyLevelFromEnv(): NotifyLevel {
-	const value = process.env.PI_CMUX_NOTIFY_LEVEL?.trim().toLowerCase();
-	if (value === "all" || value === "medium" || value === "low" || value === "disabled") {
-		return value;
+function getNotifyLevel(value: unknown): NotifyLevel | undefined {
+	if (typeof value !== "string") return undefined;
+	const normalizedValue = value.trim().toLowerCase();
+	if (
+		normalizedValue === "all" ||
+		normalizedValue === "medium" ||
+		normalizedValue === "low" ||
+		normalizedValue === "disabled"
+	) {
+		return normalizedValue;
 	}
-	return DEFAULT_NOTIFY_LEVEL;
+	return undefined;
+}
+
+function getNonNegativeInteger(value: unknown): number | undefined {
+	if (typeof value === "number") {
+		return Number.isInteger(value) && value >= 0 ? value : undefined;
+	}
+	if (typeof value !== "string") return undefined;
+	const parsedValue = Number.parseInt(value, 10);
+	return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : undefined;
+}
+
+function getNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmedValue = value.trim();
+	return trimmedValue.length > 0 ? trimmedValue : undefined;
+}
+
+function getPackageSettings(settings: unknown): Record<string, unknown> | undefined {
+	if (!isRecord(settings)) return undefined;
+	const packageSettings = settings[PACKAGE_SETTINGS_KEY];
+	return isRecord(packageSettings) ? packageSettings : undefined;
+}
+
+function loadNotifySettings(cwd: string): NotifySettings {
+	const globalSettingsPath = join(os.homedir(), PI_CONFIG_DIR, "agent", SETTINGS_FILE_NAME);
+	const projectSettingsPath = join(cwd, PI_CONFIG_DIR, SETTINGS_FILE_NAME);
+	const globalSettings = getPackageSettings(readJsonFile(globalSettingsPath));
+	const projectSettings = getPackageSettings(readJsonFile(projectSettingsPath));
+
+	return {
+		level: getNotifyLevel(projectSettings?.level) ?? getNotifyLevel(globalSettings?.level) ?? DEFAULT_NOTIFY_LEVEL,
+		thresholdMs:
+			getNonNegativeInteger(projectSettings?.thresholdMs) ??
+			getNonNegativeInteger(globalSettings?.thresholdMs) ??
+			DEFAULT_THRESHOLD_MS,
+		debounceMs:
+			getNonNegativeInteger(projectSettings?.debounceMs) ??
+			getNonNegativeInteger(globalSettings?.debounceMs) ??
+			DEFAULT_DEBOUNCE_MS,
+		title: getNonEmptyString(projectSettings?.title) ?? getNonEmptyString(globalSettings?.title) ?? DEFAULT_NOTIFY_TITLE,
+	};
 }
 
 function pluralize(count: number, singular: string, plural: string = `${singular}s`): string {
@@ -115,7 +177,9 @@ function summarizeSuccess(state: RunState, durationMs: number, thresholdMs: numb
 	}
 
 	if (state.searchCount > 0 && state.bashCount > 0) {
-		const summary = `Ran ${state.searchCount} ${pluralize(state.searchCount, "search")} and ${state.bashCount} ${pluralize(state.bashCount, "shell command")}`;
+		const searchSummary = `${state.searchCount} ${pluralize(state.searchCount, "search")}`;
+		const bashSummary = `${state.bashCount} ${pluralize(state.bashCount, "shell command")}`;
+		const summary = `Ran ${searchSummary} and ${bashSummary}`;
 		return durationMs >= thresholdMs ? `${summary} in ${formatDuration(durationMs)}` : summary;
 	}
 	if (state.searchCount > 0) {
@@ -169,7 +233,11 @@ function summarizeRunError(messages: readonly unknown[], fallbackError?: string)
 		return undefined;
 	}
 
-	const summary = assistantMessage.errorMessage?.trim() || summarizeAssistantText(assistantMessage) || fallbackError || "Agent run failed";
+	const summary =
+		assistantMessage.errorMessage?.trim() ||
+		summarizeAssistantText(assistantMessage) ||
+		fallbackError ||
+		"Agent run failed";
 	return summary.length > 120 ? `${summary.slice(0, 117)}...` : summary;
 }
 
@@ -199,15 +267,20 @@ function createEmptyRunState(): RunState {
 }
 
 export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
-	const thresholdMs = getNumberFromEnv("PI_CMUX_NOTIFY_THRESHOLD_MS", DEFAULT_THRESHOLD_MS);
-	const debounceMs = getNumberFromEnv("PI_CMUX_NOTIFY_DEBOUNCE_MS", DEFAULT_DEBOUNCE_MS);
-	const notifyLevel = getNotifyLevelFromEnv();
-	const title = process.env.PI_CMUX_NOTIFY_TITLE || "Pi";
-
+	let notifySettings: NotifySettings = {
+		level: DEFAULT_NOTIFY_LEVEL,
+		thresholdMs: DEFAULT_THRESHOLD_MS,
+		debounceMs: DEFAULT_DEBOUNCE_MS,
+		title: DEFAULT_NOTIFY_TITLE,
+	};
 	let runState = createEmptyRunState();
 	let lastNotificationAt = 0;
 	let lastNotificationKey = "";
 	let cmuxUnavailable = false;
+
+	const refreshNotifySettings = (cwd: string): void => {
+		notifySettings = loadNotifySettings(cwd);
+	};
 
 	const sendNotification = async (subtitle: string, body: string): Promise<{ ok: boolean; error?: string }> => {
 		if (cmuxUnavailable) {
@@ -216,11 +289,11 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
 
 		const notificationKey = `${subtitle}\n${body}`;
 		const now = Date.now();
-		if (notificationKey === lastNotificationKey && now - lastNotificationAt < debounceMs) {
+		if (notificationKey === lastNotificationKey && now - lastNotificationAt < notifySettings.debounceMs) {
 			return { ok: true };
 		}
 
-		const args = ["notify", "--title", title, "--subtitle", subtitle, "--body", body];
+		const args = ["notify", "--title", notifySettings.title, "--subtitle", subtitle, "--body", body];
 		const result = await pi.exec("cmux", args, { timeout: NOTIFY_TIMEOUT_MS });
 		if (result.killed) {
 			return { ok: false, error: "cmux notify timed out" };
@@ -238,7 +311,16 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
 		return { ok: true };
 	};
 
-	pi.on("agent_start", async () => {
+	pi.on("session_start", async (_event, ctx) => {
+		refreshNotifySettings(ctx.cwd);
+	});
+
+	pi.on("session_switch", async (_event, ctx) => {
+		refreshNotifySettings(ctx.cwd);
+	});
+
+	pi.on("agent_start", async (_event, ctx) => {
+		refreshNotifySettings(ctx.cwd);
 		runState = createEmptyRunState();
 	});
 
@@ -272,11 +354,11 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
 	pi.on("agent_end", async (event) => {
 		const durationMs = Date.now() - runState.startedAt;
 		const runError = summarizeRunError(event.messages, runState.firstToolError);
-		const subtitle = buildSubtitle(Boolean(runError), runState, durationMs, thresholdMs);
-		if (!shouldNotify(notifyLevel, subtitle)) {
+		const subtitle = buildSubtitle(Boolean(runError), runState, durationMs, notifySettings.thresholdMs);
+		if (!shouldNotify(notifySettings.level, subtitle)) {
 			return;
 		}
-		const body = runError || summarizeSuccess(runState, durationMs, thresholdMs);
+		const body = runError || summarizeSuccess(runState, durationMs, notifySettings.thresholdMs);
 		await sendNotification(subtitle, body);
 	});
 

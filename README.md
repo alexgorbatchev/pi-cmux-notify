@@ -4,7 +4,9 @@ Pi package with cmux-backed notifications for [Pi](https://pi.dev).
 
 ## Why
 
-Pi already knows what happened during a run. `@alexgorbatchev/pi-cmux-notify` turns that into terminal-native `cmux notify` alerts so you can notice when Pi is waiting, completed work, or ended in error.
+Pi already knows what happened during a run. `@alexgorbatchev/pi-cmux-notify` turns that into
+terminal-native `cmux notify` alerts so you can notice when Pi is waiting, completed work, or ended
+in error.
 
 ## Usage
 
@@ -63,11 +65,31 @@ Notification bodies are summarized from the run itself:
 - shell activity from `bash`
 - the final agent error, with the first tool failure used as a fallback summary when needed
 
-## Environment variables
+## Settings
 
-- `PI_CMUX_NOTIFY_LEVEL` — notification level: `all`, `medium`, `low`, or `disabled` (default: `all`)
-- `PI_CMUX_NOTIFY_THRESHOLD_MS` — duration threshold before a run is labeled `Task Complete` instead of `Waiting` (default: `15000`)
-- `PI_CMUX_NOTIFY_DEBOUNCE_MS` — minimum delay between duplicate notifications (default: `3000`)
-- `PI_CMUX_NOTIFY_TITLE` — notification title override (default: `Pi`)
+Configure notifications in Pi settings instead of environment variables.
 
-`cmux` must be available in `PATH` for notifications to work. Pi uses the current `CMUX_WORKSPACE_ID` / `CMUX_SURFACE_ID` automatically when cmux is running.
+Global settings live in `~/.pi/agent/settings.json`.
+Project settings live in `.pi/settings.json` and override global settings.
+
+Use this package-scoped key:
+
+```json
+{
+  "@alexgorbatchev/pi-cmux-notify": {
+    "level": "all",
+    "thresholdMs": 15000,
+    "debounceMs": 3000,
+    "title": "Pi"
+  }
+}
+```
+
+Supported fields:
+- `level` — `all`, `medium`, `low`, or `disabled` (default: `all`)
+- `thresholdMs` — duration threshold before a run is labeled `Task Complete` instead of `Waiting` (default: `15000`)
+- `debounceMs` — minimum delay between duplicate notifications (default: `3000`)
+- `title` — notification title override (default: `Pi`)
+
+`cmux` must be available in `PATH` for notifications to work. Pi uses the current
+`CMUX_WORKSPACE_ID` / `CMUX_SURFACE_ID` automatically when cmux is running.
