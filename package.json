@@ -1,8 +1,11 @@
 {
-  "name": "pi-cmux",
-  "version": "0.1.8",
-  "description": "Pi package with cmux-powered terminal integrations",
-  "author": "Javi Molina",
+  "name": "@alexgorbatchev/pi-cmux-notify",
+  "version": "1.0.0",
+  "description": "pi package for cmux notifications",
+  "scripts": {
+    "test": "PI_OFFLINE=1 pi --no-extensions -e ./extensions/index.ts --list-models > /dev/null"
+  },
+  "author": "Alex Gorbatchev",
   "license": "MIT",
   "type": "module",
   "keywords": [
@@ -13,24 +16,17 @@
     "terminal",
     "notifications"
   ],
-  "homepage": "https://github.com/javiermolinar/pi-cmux#readme",
+  "homepage": "https://github.com/alexgorbatchev/pi-cmux-notify#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/javiermolinar/pi-cmux.git"
+    "url": "git+https://github.com/alexgorbatchev/pi-cmux-notify.git"
   },
   "bugs": {
-    "url": "https://github.com/javiermolinar/pi-cmux/issues"
-  },
-  "bin": {
-    "pi-cmux": "install.mjs"
+    "url": "https://github.com/alexgorbatchev/pi-cmux-notify/issues"
   },
   "files": [
     "extensions/",
-    "skills/",
-    "prompts/",
-    "install.mjs",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -38,12 +34,6 @@
   "pi": {
     "extensions": [
       "./extensions/index.ts"
-    ],
-    "skills": [
-      "./skills"
-    ],
-    "prompts": [
-      "./prompts"
     ]
   },
   "peerDependencies": {

@@ -32,6 +32,10 @@ interface AssistantMessageLike {
 	content?: Array<{ type?: string; text?: string }>;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
 function getNumberFromEnv(name: string, fallback: number): number {
 	const value = process.env[name];
 	if (!value) return fallback;
@@ -128,7 +132,7 @@ function summarizeSuccess(state: RunState, durationMs: number, thresholdMs: numb
 }
 
 function isAssistantMessage(message: unknown): message is AssistantMessageLike {
-	return typeof message === "object" && message !== null && (message as { role?: unknown }).role === "assistant";
+	return isRecord(message) && message.role === "assistant";
 }
 
 function getLastAssistantMessage(messages: readonly unknown[]): AssistantMessageLike | undefined {
@@ -145,8 +149,7 @@ function summarizeAssistantText(message: AssistantMessageLike): string | undefin
 	const text = message.content
 		.filter(
 			(part): part is { type: "text"; text: string } =>
-				typeof part === "object" &&
-				part !== null &&
+				isRecord(part) &&
 				part.type === "text" &&
 				typeof part.text === "string" &&
 				part.text.trim().length > 0,
@@ -195,7 +198,7 @@ function createEmptyRunState(): RunState {
 	};
 }
 
-export default function cmuxNotifyExtension(pi: ExtensionAPI) {
+export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
 	const thresholdMs = getNumberFromEnv("PI_CMUX_NOTIFY_THRESHOLD_MS", DEFAULT_THRESHOLD_MS);
 	const debounceMs = getNumberFromEnv("PI_CMUX_NOTIFY_DEBOUNCE_MS", DEFAULT_DEBOUNCE_MS);
 	const notifyLevel = getNotifyLevelFromEnv();
