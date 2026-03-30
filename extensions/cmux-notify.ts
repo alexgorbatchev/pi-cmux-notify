@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ToolResultEvent } from "@mariozechner/pi-coding-agent";
 import {
+	SettingsManager,
 	isBashToolResult,
 	isEditToolResult,
 	isFindToolResult,
@@ -7,9 +8,7 @@ import {
 	isReadToolResult,
 	isWriteToolResult,
 } from "@mariozechner/pi-coding-agent";
-import { existsSync, readFileSync } from "node:fs";
-import os from "node:os";
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 
 const DEFAULT_THRESHOLD_MS = 15000;
 const DEFAULT_DEBOUNCE_MS = 3000;
@@ -17,8 +16,6 @@ const NOTIFY_TIMEOUT_MS = 5000;
 const DEFAULT_NOTIFY_LEVEL = "all";
 const DEFAULT_NOTIFY_TITLE = "Pi";
 const PACKAGE_SETTINGS_KEY = "@alexgorbatchev/pi-cmux-notify";
-const PI_CONFIG_DIR = ".pi";
-const SETTINGS_FILE_NAME = "settings.json";
 
 type NotifyLevel = "all" | "medium" | "low" | "disabled";
 
@@ -47,15 +44,6 @@ interface AssistantMessageLike {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
-}
-
-function readJsonFile(path: string): unknown {
-	if (!existsSync(path)) return undefined;
-	try {
-		return JSON.parse(readFileSync(path, "utf8"));
-	} catch {
-		return undefined;
-	}
 }
 
 function getNotifyLevel(value: unknown): NotifyLevel | undefined {
@@ -94,10 +82,9 @@ function getPackageSettings(settings: unknown): Record<string, unknown> | undefi
 }
 
 function loadNotifySettings(cwd: string): NotifySettings {
-	const globalSettingsPath = join(os.homedir(), PI_CONFIG_DIR, "agent", SETTINGS_FILE_NAME);
-	const projectSettingsPath = join(cwd, PI_CONFIG_DIR, SETTINGS_FILE_NAME);
-	const globalSettings = getPackageSettings(readJsonFile(globalSettingsPath));
-	const projectSettings = getPackageSettings(readJsonFile(projectSettingsPath));
+	const settingsManager = SettingsManager.create(cwd);
+	const globalSettings = getPackageSettings(settingsManager.getGlobalSettings());
+	const projectSettings = getPackageSettings(settingsManager.getProjectSettings());
 
 	return {
 		level: getNotifyLevel(projectSettings?.level) ?? getNotifyLevel(globalSettings?.level) ?? DEFAULT_NOTIFY_LEVEL,
