@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "pi package for cmux notifications",
   "scripts": {
-    "test": "PI_OFFLINE=1 pi --no-extensions -e ./extensions/index.ts --list-models > /dev/null"
+    "format": "bash scripts/format.sh",
+    "format:check": "bash scripts/format-check.sh",
+    "lint": "bash scripts/lint.sh",
+    "test": "PI_OFFLINE=1 pi --no-extensions -e ./extensions/index.ts --list-models > /dev/null",
+    "check": "npm run format:check && npm run lint && npm run test",
+    "prepublishOnly": "npm run check"
   },
   "author": "Alex Gorbatchev <alex.gorbatchev@gmail.com>",
   "contributors": [
@@ -43,6 +48,10 @@
     "@mariozechner/pi-coding-agent": "*"
   },
   "devDependencies": {
-    "@mariozechner/pi-coding-agent": "*"
+    "@alexgorbatchev/typescript-ai-policy": "^1.0.1",
+    "@mariozechner/pi-coding-agent": "*",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.58.0",
+    "tsx": "^4.21.0"
   }
 }
