@@ -1,1 +1,1 @@
-export { default } from "./piCmuxExtensionBundle.ts";
+export { default } from "./piCmuxExtensionBundle.js";

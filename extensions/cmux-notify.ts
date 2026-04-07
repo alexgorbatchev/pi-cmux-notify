@@ -159,9 +159,11 @@ function summarizeError(event: ToolResultEvent): string {
 function summarizeSuccess(state: RunState, durationMs: number, thresholdMs: number): string {
   const changedCount = state.changedFiles.size;
   if (changedCount === 1) {
-    const [file] = [...state.changedFiles];
-    const summary = `Updated ${basename(file)}`;
-    return durationMs >= thresholdMs ? `${summary} in ${formatDuration(durationMs)}` : summary;
+    const file = [...state.changedFiles][0];
+    if (file) {
+      const summary = `Updated ${basename(file)}`;
+      return durationMs >= thresholdMs ? `${summary} in ${formatDuration(durationMs)}` : summary;
+    }
   }
   if (changedCount > 1) {
     const summary = `Updated ${changedCount} ${pluralize(changedCount, "file")}`;
@@ -170,9 +172,11 @@ function summarizeSuccess(state: RunState, durationMs: number, thresholdMs: numb
 
   const readCount = state.readFiles.size;
   if (readCount === 1) {
-    const [file] = [...state.readFiles];
-    const summary = `Reviewed ${basename(file)}`;
-    return durationMs >= thresholdMs ? `${summary} in ${formatDuration(durationMs)}` : summary;
+    const file = [...state.readFiles][0];
+    if (file) {
+      const summary = `Reviewed ${basename(file)}`;
+      return durationMs >= thresholdMs ? `${summary} in ${formatDuration(durationMs)}` : summary;
+    }
   }
   if (readCount > 1) {
     const summary = `Reviewed ${readCount} ${pluralize(readCount, "file")}`;
@@ -310,10 +314,6 @@ export default function cmuxNotifyExtension(pi: ExtensionAPI): void {
   };
 
   pi.on("session_start", async (_event, ctx) => {
-    refreshNotifySettings(ctx.cwd);
-  });
-
-  pi.on("session_switch", async (_event, ctx) => {
     refreshNotifySettings(ctx.cwd);
   });
 
