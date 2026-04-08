@@ -17,7 +17,7 @@ Other important files:
 ## Commands
 
 - Install: `bun install`
-- Format: `bun run fmt`
+- Fix: `bun run fix`
 - Check: `bun run check`
 - Smoke test: `bun run test`
 
@@ -38,6 +38,7 @@ Other important files:
 Before pushing changes:
 
 - run `bun run check && bun run test`
+- if formatting or auto-fixes are needed first, run `bun run fix`
 - bump the npm version
 - make sure `README.md` matches the current behavior
 - review the git diff for accidental changes
