@@ -29,6 +29,7 @@ If Pi is already running, reload extensions:
 ## Notification behavior
 
 All notifications use:
+
 - title: `Pi` by default
 - subtitle: current run state
 - body: a short summary of what Pi just did
@@ -59,6 +60,7 @@ Current notification types:
     - `bash command failed`
 
 Notification bodies are summarized from the run itself:
+
 - changed files from `edit` and `write`
 - reviewed files from `read`
 - searches from `grep` and `find`
@@ -86,6 +88,7 @@ Use this package-scoped key:
 ```
 
 Supported fields:
+
 - `level` — `all`, `medium`, `low`, or `disabled` (default: `all`)
 - `thresholdMs` — duration threshold before a run is labeled `Task Complete` instead of `Waiting` (default: `15000`)
 - `debounceMs` — minimum delay between duplicate notifications (default: `3000`)
